@@ -1,0 +1,98 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <img src="{{ listing.product_image }}" class="card-img-top" alt="{{ listing.product_name }}"
+             style="max-height:450px; object-fit:cover;">
+        <div class="card-body">
+            <h2 class="card-title">{{ listing.product_name }}</h2>
+            <p class="card-text">{{ listing.product_description }}</p>
+            <p>
+                <strong>Starting Bid:</strong>
+                ${{ listing.starting_bid }}
+            </p>
+            {% if highest_bid %}
+                <p>
+                    <strong>Current Highest Bid:</strong>
+                    ${{ highest_bid.bid_amount }}
+                </p>
+            {% else %}
+                <p>
+                    <strong>Current Highest Bid:</strong>
+                    No bids yet.
+                </p>
+            {% endif %}
+
+            <p>
+                <strong>Category:</strong>
+                {{ listing.category }}
+            </p>
+            <a href="{% url 'watchlist' listing.id %}"class="btn btn-warning">Add to Watchlist</a>
+
+            {% if user == listing.owner and listing.is_active %}
+                <a href="{% url 'close_listing' listing.id %}" class="btn btn-danger">Close Auction</a>
+            {% endif %}
+        </div>
+    </div>
+    <br>
+    {% if message %}
+        <div class="alert alert-{{ message_type }}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    {% if listing.is_active %}
+        <div class="card p-3 shadow-sm">
+           <h4>Place a Bid</h4>
+            <form action="{% url 'listing' listing.id %}" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <input type="number" name="bid_amount" class="form-control" placeholder="Enter your bid">
+                </div>
+                <button class="btn btn-success">Place Bid</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="alert alert-success mt-3">
+            <strong>Auction Closed!</strong>
+            <br>
+            {% if winner %}
+                Winner:
+                <strong>{{ winner }}</strong>
+            {% else %}
+                No bids were placed.
+            {% endif %}
+        </div>
+    {% endif %}
+    <br>
+    <div class="card shadow-sm p-3">
+        <h4>Add a Comment</h4>
+        <form action="{% url 'comment' listing.id %}" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <textarea class="form-control" name="comment" rows="3" placeholder="Write your comment"></textarea>
+            </div>
+            <button class="btn btn-primary">Post Comment</button>
+        </form>
+    </div>
+    <br>
+
+    <h3>Comments</h3>
+    {% if comments %}
+        {% for comment in comments %}
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h6>{{ comment.user }}</h6>
+                    <p>{{ comment.message }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-light">No comments yet.</div>
+    {% endif %}
+
+</div>
+
+{% endblock %}
