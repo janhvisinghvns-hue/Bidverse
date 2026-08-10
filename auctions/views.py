@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from .form import ListingForm
 from .models import User , Listing , Bid , Comment , Category
+from decimal import Decimal
 
 
 def index(request):
@@ -19,6 +20,8 @@ def listing(request, id):
     message = None
     message_type = None
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect(f"/login?next=/listing/{id}")
         message , message_type= place_bid(request, listing)
 
     highest_bid = Bid.objects.filter(bid_product=listing).order_by("-bid_amount").first()
@@ -37,7 +40,7 @@ def listing(request, id):
 
 
 def place_bid(request, listing):
-    amount = request.POST["bid_amount"]
+    amount = Decimal(request.POST["bid_amount"])
     if not listing.is_active:
         return "This auction has been closed.", "danger"
     if request.user == listing.owner:
@@ -46,8 +49,11 @@ def place_bid(request, listing):
     highest_bid = Bid.objects.filter(
         bid_product=listing
     ).order_by("-bid_amount").first()
+    if amount < listing.starting_bid:
+        return "Your bid cannot be lower than the starting price.", "danger"
     if highest_bid and float(amount) <= highest_bid.bid_amount:
         return "Your bid must be higher than the current highest bid." , "danger"
+    
     Bid.objects.create(
         bidder=request.user,
         bid_product=listing,
